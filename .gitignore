@@ -37,10 +37,10 @@ logs
 *.log
 lerna-debug.log*
 
-# Local env files
-.env
-.env.*
-!.env.example
+# # Local env files
+# .env
+# .env.*
+# !.env.example
 
 # Vercel
 .vercel

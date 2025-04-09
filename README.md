@@ -71,6 +71,14 @@ To set up and run the backend:
 
 ✨ The backend API should now be running at `http://localhost:3001`.
 
+## Run Backend TESTS
+
+```bash
+npm test:cov
+# or
+yarn test:cov
+```
+
 ## 🌐 Frontend Setup
 
 To set up and run the frontend:

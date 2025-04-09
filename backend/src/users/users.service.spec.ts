@@ -5,11 +5,13 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { NotFoundException } from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
+import { LoggingService } from "../logging/logging.service";
 
 describe("UsersService", () => {
   let service: UsersService;
   let prismaService: PrismaService;
   let cacheManager: any;
+  let loggingService: LoggingService;
 
   const mockPrismaService = {
     user: {
@@ -27,18 +29,28 @@ describe("UsersService", () => {
     del: jest.fn(),
   };
 
+  const mockLoggingService = {
+    setContext: jest.fn(),
+    log: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CACHE_MANAGER, useValue: mockCacheManager },
+        { provide: LoggingService, useValue: mockLoggingService },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
     prismaService = module.get<PrismaService>(PrismaService);
     cacheManager = module.get(CACHE_MANAGER);
+    loggingService = module.get<LoggingService>(LoggingService);
   });
 
   it("should be defined", () => {
@@ -67,6 +79,25 @@ describe("UsersService", () => {
         data: { ...createUserDto, active: true },
       });
       expect(mockCacheManager.del).toHaveBeenCalledWith("users");
+      expect(mockLoggingService.log).toHaveBeenCalledTimes(2);
+    });
+
+    it("should throw and log error if creation fails", async () => {
+      const createUserDto: CreateUserDto = {
+        name: "Test User",
+        email: "test@example.com",
+        password: "password123",
+      };
+
+      const error = new Error("Database error");
+      mockPrismaService.user.create.mockRejectedValue(error);
+
+      await expect(service.create(createUserDto)).rejects.toThrow(error);
+      expect(mockLoggingService.error).toHaveBeenCalledWith(
+        `Error creating user: ${error.message}`,
+        error.stack,
+        { email: createUserDto.email }
+      );
     });
   });
 
